@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manu Kiran S | Embedded Systems Engineer</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  /* ---- PCB token system ---- */
+  --board:#091611;          /* substrate, near-black green */
+  --board-raised:#0e2019;   /* card / panel surface */
+  --board-line:#173028;     /* hairline borders */
+  --copper:#c98a52;         /* copper trace */
+  --copper-bright:#e7ad74;  /* gold pad / highlight */
+  --signal:#5eead4;         /* teal signal glow */
+  --signal-dim:#2c6e63;
+  --silk:#eaf2ec;           /* silkscreen white */
+  --silk-dim:#8aa89b;       /* muted silkscreen grey-green */
+  --led-green:#52e08a;
+  --led-red:#ff6b6b;
+  --mono:'Space Mono', monospace;
+  --sans:'Inter', sans-serif;
+  --radius:10px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+html{scroll-behavior:smooth;}
+
+body{
+  background:var(--board);
+  color:var(--silk);
+  font-family:var(--sans);
+  line-height:1.65;
+  overflow-x:hidden;
+  position:relative;
+}
+
+::selection{background:var(--signal);color:#06140f;}
+
+a{color:inherit;}
+
+/* =================== circuit board backdrop =================== */
+.circuit-bg{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  opacity:.5;
+}
+.circuit-bg svg{width:100%;height:100%;}
+.trace-pulse{
+  stroke-dasharray: 6 14;
+  animation:dash-flow 5s linear infinite;
+}
+@keyframes dash-flow{ to{ stroke-dashoffset:-200; } }
+
+.glow-orb{
+  position:fixed;
+  width:560px;height:560px;
+  border-radius:50%;
+  filter:blur(110px);
+  opacity:.16;
+  z-index:0;
+  pointer-events:none;
+}
+.glow-orb.one{background:var(--signal);top:-120px;left:-160px;}
+.glow-orb.two{background:var(--copper);bottom:-160px;right:-160px;}
+
+/* floating status LEDs scattered in the backdrop */
+.led-dot{
+  position:fixed;
+  width:6px;height:6px;
+  border-radius:50%;
+  background:var(--led-green);
+  box-shadow:0 0 8px 2px var(--led-green);
+  z-index:0;
+  pointer-events:none;
+  animation:led-blink 3.4s ease-in-out infinite;
+}
+@keyframes led-blink{0%,100%{opacity:.25;}50%{opacity:1;}}
+
+/* =================== scroll progress =================== */
+.scroll-progress{
+  position:fixed;
+  top:0;left:0;
+  height:3px;
+  width:0%;
+  background:linear-gradient(90deg,var(--copper),var(--signal));
+  box-shadow:0 0 10px var(--signal);
+  z-index:1000;
+  transition:width .1s linear;
+}
+
+/* =================== nav =================== */
+nav{
+  position:sticky;top:0;
+  z-index:900;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:16px 40px;
+  background:rgba(9,22,17,.78);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--board-line);
+}
+.logo{
+  font-family:var(--mono);
+  font-weight:700;
+  font-size:1.15rem;
+  letter-spacing:.5px;
+  color:var(--silk);
+}
+.logo span{color:var(--signal);}
+
+.nav-links{
+  display:flex;
+  gap:30px;
+  list-style:none;
+  font-family:var(--mono);
+  font-size:.82rem;
+  letter-spacing:.5px;
+}
+.nav-links a{
+  text-decoration:none;
+  color:var(--silk-dim);
+  position:relative;
+  padding-bottom:4px;
+  transition:color .25s;
+}
+.nav-links a::after{
+  content:'';
+  position:absolute;
+  left:0;bottom:0;
+  height:2px;width:0;
+  background:var(--signal);
+  box-shadow:0 0 6px var(--signal);
+  transition:width .25s;
+}
+.nav-links a:hover,.nav-links a.active{color:var(--silk);}
+.nav-links a:hover::after,.nav-links a.active::after{width:100%;}
+
+.nav-status{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);
+  font-size:.75rem;
+  color:var(--silk-dim);
+}
+.pwr-led-small{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--led-green);
+  box-shadow:0 0 6px 2px var(--led-green);
+  animation:led-blink 2.2s ease-in-out infinite;
+}
+
+.nav-toggle{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none;}
+.nav-toggle span{width:24px;height:2px;background:var(--silk);display:block;transition:.25s;}
+
+/* =================== hero =================== */
+header.hero{
+  min-height:92vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:60px 20px;
+  position:relative;
+  z-index:1;
+}
+
+.mcu-chip{
+  display:flex;flex-direction:column;align-items:center;
+  margin-bottom:34px;
+}
+.pin-row{display:flex;gap:18px;}
+.pin-row.top{margin-bottom:-1px;}
+.pin-row.bottom{margin-top:-1px;}
+.pin{
+  width:10px;height:16px;
+  background:linear-gradient(180deg,var(--copper-bright),var(--copper));
+  border-radius:2px;
+  position:relative;
+}
+.pin::after{
+  content:attr(data-label);
+  position:absolute;
+  font-family:var(--mono);
+  font-size:.58rem;
+  color:var(--silk-dim);
+  white-space:nowrap;
+  left:50%;transform:translateX(-50%);
+}
+.pin-row.top .pin::after{top:-16px;}
+.pin-row.bottom .pin::after{bottom:-16px;}
+
+.chip-body{
+  background:linear-gradient(160deg,var(--board-raised),#0a1c15);
+  border:1px solid var(--board-line);
+  border-radius:14px;
+  padding:46px 56px 38px;
+  position:relative;
+  box-shadow:0 0 0 1px rgba(94,234,212,.05), 0 30px 60px -20px rgba(0,0,0,.6);
+}
+.chip-body::before{ /* orientation notch */
+  content:'';
+  position:absolute;
+  top:14px;left:14px;
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--board-line);
+}
+.pwr-led{
+  position:absolute;
+  top:18px;right:18px;
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);
+  font-size:.62rem;
+  color:var(--silk-dim);
+}
+.pwr-led::before{
+  content:'';
+  width:8px;height:8px;border-radius:50%;
+  background:var(--led-green);
+  box-shadow:0 0 8px 3px var(--led-green);
+  animation:led-blink 2.4s ease-in-out infinite;
+}
+
+.chip-body h1{
+  font-family:var(--mono);
+  font-size:clamp(1.9rem,5vw,3.1rem);
+  letter-spacing:1px;
+  color:var(--silk);
+  text-shadow:0 0 22px rgba(94,234,212,.18);
+}
+.role-line{
+  font-family:var(--mono);
+  color:var(--signal);
+  font-size:.95rem;
+  margin-top:14px;
+  min-height:1.4em;
+}
+.role-line .cursor{
+  display:inline-block;
+  width:8px;height:1em;
+  background:var(--signal);
+  margin-left:2px;
+  vertical-align:-2px;
+  animation:blink-caret 1s steps(1) infinite;
+}
+@keyframes blink-caret{50%{opacity:0;}}
+.role-sub{
+  color:var(--silk-dim);
+  font-size:.95rem;
+  margin-top:8px;
+}
+
+.hero-ctas{display:flex;gap:18px;margin-top:36px;flex-wrap:wrap;justify-content:center;}
+
+.btn{
+  font-family:var(--mono);
+  font-size:.85rem;
+  letter-spacing:.5px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:13px 26px;
+  border-radius:6px;
+  text-decoration:none;
+  cursor:pointer;
+  border:1px solid var(--copper);
+  transition:transform .2s, box-shadow .2s, background .2s;
+}
+.btn-fill{
+  background:linear-gradient(180deg,var(--copper-bright),var(--copper));
+  color:#1a0f06;
+  border-color:transparent;
+}
+.btn-fill:hover{transform:translateY(-3px);box-shadow:0 12px 28px -10px rgba(201,138,82,.55);}
+.btn-outline{
+  background:transparent;
+  color:var(--silk);
+}
+.btn-outline:hover{
+  border-color:var(--signal);
+  color:var(--signal);
+  box-shadow:0 0 18px -4px var(--signal);
+  transform:translateY(-3px);
+}
+.btn:focus-visible{outline:2px solid var(--signal);outline-offset:3px;}
+
+.scroll-cue{
+  margin-top:54px;
+  font-family:var(--mono);
+  font-size:.7rem;
+  color:var(--silk-dim);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  animation:bob 2.2s ease-in-out infinite;
+}
+.scroll-cue svg{width:16px;height:16px;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(8px);}}
+
+/* =================== sections =================== */
+section{
+  max-width:1180px;
+  margin:0 auto;
+  padding:100px 24px;
+  position:relative;
+  z-index:1;
+}
+.eyebrow{
+  font-family:var(--mono);
+  color:var(--signal);
+  font-size:.78rem;
+  letter-spacing:1.5px;
+  margin-bottom:10px;
+}
+.section-title h2{
+  font-family:var(--mono);
+  font-size:clamp(1.5rem,3vw,2.1rem);
+  color:var(--silk);
+  letter-spacing:.5px;
+}
+.section-title{margin-bottom:46px;}
+
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+.card{
+  background:var(--board-raised);
+  border:1px solid var(--board-line);
+  border-top:2px solid var(--copper);
+  border-radius:var(--radius);
+  padding:30px 32px;
+  box-shadow:0 18px 40px -24px rgba(0,0,0,.7);
+}
+
+/* about */
+.about-card p{color:var(--silk-dim);font-size:1rem;}
+.about-card p + p{margin-top:14px;}
+.about-card strong{color:var(--silk);}
+
+/* skills */
+.skill-group{margin-bottom:30px;}
+.skill-group:last-child{margin-bottom:0;}
+.skill-group .label{
+  font-family:var(--mono);
+  font-size:.72rem;
+  color:var(--silk-dim);
+  letter-spacing:1.5px;
+  margin-bottom:14px;
+  display:block;
+}
+.skill-row{display:flex;flex-wrap:wrap;gap:12px;}
+.smd{
+  font-family:var(--mono);
+  font-size:.82rem;
+  color:var(--silk);
+  background:#0c1f17;
+  border:1px solid var(--board-line);
+  border-radius:5px;
+  padding:9px 16px;
+  position:relative;
+  transition:border-color .2s, box-shadow .2s, transform .2s;
+}
+.smd::before,.smd::after{
+  content:'';
+  position:absolute;
+  top:50%;transform:translateY(-50%);
+  width:6px;height:2px;
+  background:var(--copper);
+}
+.smd::before{left:-6px;}
+.smd::after{right:-6px;}
+.smd:hover{
+  border-color:var(--signal);
+  box-shadow:0 0 16px -2px var(--signal);
+  transform:translateY(-3px);
+  color:var(--signal);
+}
+
+/* timeline */
+.timeline{position:relative;padding-left:34px;}
+.timeline::before{
+  content:'';
+  position:absolute;
+  left:5px;top:6px;bottom:6px;
+  width:2px;
+  background:linear-gradient(180deg,var(--copper),var(--signal-dim));
+}
+.timeline-item{position:relative;margin-bottom:40px;}
+.timeline-item:last-child{margin-bottom:0;}
+.timeline-item::before{
+  content:'';
+  position:absolute;
+  left:-34px;top:6px;
+  width:12px;height:12px;
+  border-radius:50%;
+  background:var(--board);
+  border:2px solid var(--copper-bright);
+  box-shadow:0 0 0 4px var(--board), 0 0 12px var(--signal);
+}
+.timeline-item h3{font-family:var(--mono);font-size:1.05rem;color:var(--silk);}
+.timeline-item h4{font-size:.92rem;color:var(--signal);font-weight:500;margin-top:4px;}
+.timeline-item .date{
+  font-family:var(--mono);
+  font-size:.72rem;
+  color:var(--silk-dim);
+  margin:6px 0 12px;
+  display:inline-block;
+}
+.timeline-item ul{list-style:none;color:var(--silk-dim);font-size:.92rem;}
+.timeline-item ul li{position:relative;padding-left:18px;margin-bottom:6px;}
+.timeline-item ul li::before{
+  content:'›';
+  position:absolute;left:0;color:var(--copper);
+}
+
+/* freelance */
+.freelance-card{display:flex;flex-wrap:wrap;gap:40px;align-items:center;}
+.freelance-text{flex:1;min-width:260px;}
+.freelance-text ul{list-style:none;color:var(--silk-dim);font-size:.92rem;}
+.freelance-text ul li{position:relative;padding-left:18px;margin-bottom:8px;}
+.freelance-text ul li::before{content:'›';position:absolute;left:0;color:var(--copper);}
+.counter-box{
+  text-align:center;
+  padding:26px 30px;
+  border:1px dashed var(--board-line);
+  border-radius:var(--radius);
+  min-width:200px;
+}
+.counter-box .amount{
+  font-family:var(--mono);
+  font-size:2.1rem;
+  color:var(--signal);
+  text-shadow:0 0 20px rgba(94,234,212,.3);
+}
+.counter-box .amount-label{
+  font-family:var(--mono);
+  font-size:.68rem;
+  color:var(--silk-dim);
+  letter-spacing:1px;
+  margin-top:6px;
+}
+
+/* projects */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:26px;}
+.chip-card{
+  background:#0a1c15;
+  border:1px solid var(--board-line);
+  border-radius:12px;
+  padding:28px 26px;
+  position:relative;
+  transition:transform .25s, box-shadow .25s, border-color .25s;
+  overflow:hidden;
+}
+.chip-card::before{ /* notch */
+  content:'';
+  position:absolute;
+  top:0;left:24px;
+  width:18px;height:6px;
+  background:var(--board);
+  border-radius:0 0 6px 6px;
+}
+.chip-card .pad{
+  position:absolute;
+  width:7px;height:7px;
+  background:var(--copper-bright);
+  border-radius:1px;
+}
+.chip-card .pad.tl{top:10px;left:10px;}
+.chip-card .pad.tr{top:10px;right:10px;}
+.chip-card .pad.bl{bottom:10px;left:10px;}
+.chip-card .pad.br{bottom:10px;right:10px;}
+.chip-card h3{
+  font-family:var(--mono);
+  font-size:1rem;
+  color:var(--silk);
+  margin-bottom:12px;
+  padding-right:10px;
+}
+.chip-card p{color:var(--silk-dim);font-size:.9rem;}
+.chip-card:hover{
+  transform:translateY(-6px);
+  border-color:var(--signal);
+  box-shadow:0 0 0 1px var(--signal), 0 24px 40px -20px rgba(94,234,212,.25);
+}
+
+/* education */
+.edu-card{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+.edu-badge{
+  font-family:var(--mono);
+  font-size:.7rem;
+  color:var(--copper-bright);
+  border:1px solid var(--copper);
+  padding:8px 12px;
+  border-radius:6px;
+  white-space:nowrap;
+}
+.edu-card p{color:var(--silk-dim);}
+.edu-card h3{font-family:var(--mono);color:var(--silk);font-size:1.05rem;margin-bottom:6px;}
+
+/* contact */
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;}
+.contact-pin{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:#0c1f17;
+  border:1px solid var(--board-line);
+  border-radius:8px;
+  padding:16px 18px;
+  cursor:pointer;
+  transition:border-color .2s, box-shadow .2s;
+}
+.contact-pin:hover{border-color:var(--signal);box-shadow:0 0 16px -4px var(--signal);}
+.contact-pin svg{width:18px;height:18px;color:var(--copper-bright);flex-shrink:0;}
+.contact-pin .meta{display:flex;flex-direction:column;}
+.contact-pin .meta .k{font-family:var(--mono);font-size:.65rem;color:var(--silk-dim);letter-spacing:1px;}
+.contact-pin .meta .v{font-size:.9rem;color:var(--silk);}
+
+/* footer */
+footer{
+  text-align:center;
+  padding:34px 20px;
+  border-top:1px solid var(--board-line);
+  font-family:var(--mono);
+  font-size:.75rem;
+  color:var(--silk-dim);
+  position:relative;
+  z-index:1;
+}
+
+/* toast */
+.toast{
+  position:fixed;
+  bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--board-raised);
+  border:1px solid var(--signal);
+  color:var(--silk);
+  font-family:var(--mono);
+  font-size:.8rem;
+  padding:10px 20px;
+  border-radius:8px;
+  box-shadow:0 0 20px -4px var(--signal);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .25s, transform .25s;
+  z-index:1100;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* back to top */
+.back-to-top{
+  position:fixed;
+  bottom:28px;right:28px;
+  width:44px;height:44px;
+  border-radius:50%;
+  background:var(--board-raised);
+  border:1px solid var(--copper);
+  color:var(--copper-bright);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(10px);
+  transition:opacity .25s, transform .25s, border-color .25s;
+  z-index:800;
+}
+.back-to-top.show{opacity:1;pointer-events:auto;transform:translateY(0);}
+.back-to-top:hover{border-color:var(--signal);color:var(--signal);}
+.back-to-top svg{width:18px;height:18px;}
+
+/* =================== responsive =================== */
+@media (max-width:760px){
+  nav{padding:14px 20px;}
+  .nav-links{
+    position:absolute;
+    top:100%;left:0;right:0;
+    background:rgba(9,22,17,.97);
+    flex-direction:column;
+    gap:0;
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .3s ease;
+    border-bottom:1px solid var(--board-line);
+  }
+  .nav-links.open{max-height:320px;}
+  .nav-links li{width:100%;}
+  .nav-links a{display:block;padding:16px 24px;border-bottom:1px solid var(--board-line);}
+  .nav-status{display:none;}
+  .nav-toggle{display:flex;}
+  .chip-body{padding:34px 22px 30px;}
+  .pin-row{gap:10px;}
+  section{padding:70px 20px;}
+  .freelance-card{flex-direction:column;align-items:stretch;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;}
+  html{scroll-behavior:auto;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- decorative PCB trace backdrop -->
+<div class="circuit-bg" aria-hidden="true">
+  <svg width="100%" height="100%" preserveAspectRatio="none">
+    <defs>
+      <pattern id="pcbPattern" width="180" height="180" patternUnits="userSpaceOnUse">
+        <path d="M0 40 H120 V180" fill="none" stroke="#1c4536" stroke-width="1.4"/>
+        <path d="M0 120 H70 V0" fill="none" stroke="#1c4536" stroke-width="1.4"/>
+        <path d="M40 0 V180" fill="none" stroke="#173a2d" stroke-width="1"/>
+        <path class="trace-pulse" d="M0 40 H120" fill="none" stroke="#c98a52" stroke-width="1.2"/>
+        <path class="trace-pulse" d="M0 120 H70" fill="none" stroke="#5eead4" stroke-width="1.2"/>
+        <circle cx="120" cy="40" r="3.4" fill="#1c4536" stroke="#c98a52" stroke-width="1"/>
+        <circle cx="70" cy="120" r="3.4" fill="#1c4536" stroke="#5eead4" stroke-width="1"/>
+        <circle cx="40" cy="40" r="2.6" fill="#173a2d"/>
+        <circle cx="40" cy="120" r="2.6" fill="#173a2d"/>
+        <rect x="112" y="160" width="16" height="10" rx="1.5" fill="none" stroke="#1c4536" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#pcbPattern)"/>
+  </svg>
+</div>
+<div class="glow-orb one" aria-hidden="true"></div>
+<div class="glow-orb two" aria-hidden="true"></div>
+
+<!-- nav -->
+<nav>
+  <div class="logo">&lt;MKS<span>/</span>&gt;</div>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#about">About</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#experience">Experience</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#education">Education</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-status"><span class="pwr-led-small"></span> OPEN_TO_OPPORTUNITIES</div>
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- hero -->
+<header class="hero">
+  <div class="mcu-chip">
+    <div class="pin-row top">
+      <span class="pin" data-label="VCC"></span>
+      <span class="pin" data-label="RST"></span>
+      <span class="pin" data-label="GPIO"></span>
+      <span class="pin" data-label="GND"></span>
+    </div>
+    <div class="chip-body">
+      <div class="pwr-led">PWR</div>
+      <h1>MANU KIRAN S</h1>
+      <p class="role-line" id="roleLine"><span class="cursor"></span></p>
+      <p class="role-sub">IoT Developer · RF &amp; FPGA Testing · Hardware-Software Integration</p>
+    </div>
+    <div class="pin-row bottom">
+      <span class="pin" data-label="UART"></span>
+      <span class="pin" data-label="SPI"></span>
+      <span class="pin" data-label="I2C"></span>
+      <span class="pin" data-label="ADC"></span>
+    </div>
+  </div>
+
+  <div class="hero-ctas">
+    <a href="Manukiran_S.pdf" class="btn btn-fill">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+      Download Resume
+    </a>
+    <a href="https://www.linkedin.com/in/manukiran-s-0841z900"
+   target="_blank"
+   class="btn btn-outline">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5m0 0c0-1.5 4-1.5 4 0v5"/></svg>
+      LinkedIn
+    </a>
+  </div>
+
+  <div class="scroll-cue">
+    SCROLL
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
+</header>
+
+<!-- about -->
+<section id="about" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 01_ABOUT</div>
+    <h2>Profile Summary</h2>
+  </div>
+  <div class="card about-card">
+    <p>Electronics and Communication Engineering graduate with hands-on experience in <strong>Embedded Systems, RF Testing, FPGA Validation, IoT Development</strong>, and Hardware-Software Integration.</p>
+    <p>Through internships at BEL and HAL, embedded training at Vector India, and freelance engineering projects, I have gained practical experience designing, testing, and deploying real-world systems.</p>
+    <p>I enjoy building products from concept to deployment, working across both hardware and software domains.</p>
+  </div>
+</section>
+
+<!-- skills -->
+<section id="skills" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 02_SKILLS</div>
+    <h2>Technical Skills</h2>
+  </div>
+  <div class="card">
+    <div class="skill-group">
+      <span class="label">LANGUAGES</span>
+      <div class="skill-row">
+        <span class="smd">Embedded C</span>
+        <span class="smd">C</span>
+        <span class="smd">Python</span>
+      </div>
+    </div>
+    <div class="skill-group">
+      <span class="label">BOARDS &amp; ARCHITECTURE</span>
+      <div class="skill-row">
+        <span class="smd">ESP32</span>
+        <span class="smd">Raspberry Pi</span>
+        <span class="smd">LPC2148</span>
+        <span class="smd">ARM Cortex-M</span>
+      </div>
+    </div>
+    <div class="skill-group">
+      <span class="label">PROTOCOLS</span>
+      <div class="skill-row">
+        <span class="smd">UART</span>
+        <span class="smd">SPI</span>
+        <span class="smd">I2C</span>
+      </div>
+    </div>
+    <div class="skill-group">
+      <span class="label">TESTING</span>
+      <div class="skill-row">
+        <span class="smd">FPGA Testing</span>
+        <span class="smd">RF Testing</span>
+      </div>
+    </div>
+    <div class="skill-group">
+      <span class="label">TOOLS</span>
+      <div class="skill-row">
+        <span class="smd">Keil</span>
+        <span class="smd">VS Code</span>
+        <span class="smd">Eagle</span>
+        <span class="smd">Git</span>
+      </div>
+    </div>
+    <div class="skill-group">
+      <span class="label">AI &amp; VISION</span>
+      <div class="skill-row">
+        <span class="smd">OpenCV</span>
+        <span class="smd">YOLOv8</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- experience -->
+<section id="experience" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 03_EXPERIENCE</div>
+    <h2>Work Timeline</h2>
+  </div>
+  <div class="timeline">
+
+    <div class="timeline-item">
+      <h3>Hindustan Aeronautics Limited (HAL)</h3>
+      <h4>Intern — Helicopter Division (RWRDC)</h4>
+      <span class="date">June 2025 – July 2025</span>
+      <ul>
+        <li>Exposure to helicopter avionics systems.</li>
+        <li>Module testing and system verification.</li>
+        <li>Aircraft electronic architecture understanding.</li>
+        <li>Testing workflow and maintenance procedures.</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <h3>Bharat Electronics Limited (BEL)</h3>
+      <h4>Apprentice — HMC &amp; RF Testing</h4>
+      <span class="date">July 2025 – January 2026</span>
+      <ul>
+        <li>Tested FPGA-based systems and RF modules.</li>
+        <li>Verified ADC readings and communication data.</li>
+        <li>Performed PCB troubleshooting and validation.</li>
+        <li>Conducted RF signal testing and calibration.</li>
+        <li>Worked on X-Band Exciter testing activities.</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <h3>Vector India</h3>
+      <h4>Embedded Systems Trainee</h4>
+      <span class="date">January 2026 – Present</span>
+      <ul>
+        <li>Embedded C programming.</li>
+        <li>LPC2148 peripheral programming.</li>
+        <li>UART, SPI, I2C, interrupts.</li>
+        <li>ARM Cortex-M fundamentals.</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<!-- freelance -->
+<section id="freelance" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 04_FREELANCE</div>
+    <h2>Freelance Experience</h2>
+  </div>
+  <div class="card freelance-card">
+    <div class="freelance-text">
+      <h3 style="font-family:var(--mono);color:var(--silk);margin-bottom:10px;">Freelance Embedded &amp; Software Developer · 2024 – Present</h3>
+      <ul>
+        <li>Delivered custom embedded and IoT projects.</li>
+        <li>Built automation and monitoring solutions.</li>
+        <li>Developed websites and digital solutions for clients.</li>
+        <li>Managed project design, development, testing and deployment.</li>
+      </ul>
+    </div>
+    <div class="counter-box">
+      <div class="amount" id="counterAmount">₹0</div>
+      <div class="amount-label">PROJECT VALUE DELIVERED</div>
+    </div>
+  </div>
+</section>
+
+<!-- projects -->
+<section id="projects" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 05_PROJECTS</div>
+    <h2>Featured Projects</h2>
+  </div>
+  <div class="grid">
+
+    <div class="chip-card">
+      <span class="pad tl"></span><span class="pad tr"></span><span class="pad bl"></span><span class="pad br"></span>
+      <h3>Highway Surveillance Drone — YOLOv8</h3>
+      <p>AI-powered surveillance system using a DJI Tello drone and YOLOv8 for vehicle detection, traffic monitoring, accident detection, and congestion analysis.</p>
+    </div>
+
+    <div class="chip-card">
+      <span class="pad tl"></span><span class="pad tr"></span><span class="pad bl"></span><span class="pad br"></span>
+      <h3>Smart Vending Machine</h3>
+      <p>Cashless vending machine using Raspberry Pi, ESP32, and Razorpay integration with real-time stock management and payment verification.</p>
+    </div>
+
+    <div class="chip-card">
+      <span class="pad tl"></span><span class="pad tr"></span><span class="pad bl"></span><span class="pad br"></span>
+      <h3>Fingerprint Based Vending Machine</h3>
+      <p>Biometric vending system using Raspberry Pi and an R307 fingerprint sensor for secure user authentication.</p>
+    </div>
+
+    <div class="chip-card">
+      <span class="pad tl"></span><span class="pad tr"></span><span class="pad bl"></span><span class="pad br"></span>
+      <h3>ESP32 IoT Monitoring System</h3>
+      <p>Remote monitoring and automation system using ESP32, sensors, Wi-Fi connectivity, and web dashboards.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- education -->
+<section id="education" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 06_EDUCATION</div>
+    <h2>Education</h2>
+  </div>
+  <div class="card edu-card">
+    <span class="edu-badge">B.TECH</span>
+    <div>
+      <h3>Bachelor of Technology — Electronics &amp; Communication Engineering</h3>
+      <p>Presidency University</p>
+    </div>
+  </div>
+</section>
+
+<!-- contact -->
+<section id="contact" class="reveal">
+  <div class="section-title">
+    <div class="eyebrow">// 07_CONTACT</div>
+    <h2>Let's Connect</h2>
+  </div>
+  <div class="contact-grid">
+
+    <div class="contact-pin" data-copy="manukiran0841@gmail.com">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+      <div class="meta"><span class="k">EMAIL</span><span class="v">manukiran0841@gmail.com</span></div>
+    </div>
+
+    <div class="contact-pin" data-copy="+91 XXXXX XXXXX">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+      <div class="meta"><span class="k">PHONE</span><span class="v">+91 XXXXX XXXXX</span></div>
+    </div>
+
+    <a class="contact-pin"
+   href="https://www.linkedin.com/in/manukiran-s-0841z900"
+   target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5m0 0c0-1.5 4-1.5 4 0v5"/></svg>
+<div class="meta">
+        <span class="k">LINKEDIN</span>
+        <span class="v">manukiran-s-0841z900</span>
+    </div>
+
+</a>
+
+    <a class="contact-pin"
+   href="https://github.com/manukiran-S"
+   target="_blank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-4 1.5-4-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+      <div class="meta"><span class="k">GITHUB</span><span class="v">github.com/manukiran-S</span></div>
+</a>
+
+  </div>
+</section>
+
+<footer>
+  © 2026 Manu Kiran S — Compiled with embedded enthusiasm in Bengaluru
+</footer>
+
+<div class="toast" id="toast">Copied to clipboard</div>
+
+<button class="back-to-top" id="backToTop" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
+<script>
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* scattered LEDs */
+(function placeLeds(){
+  const positions = [[6,18],[92,28],[14,62],[88,72],[48,12],[60,88]];
+  positions.forEach(([x,y])=>{
+    const d = document.createElement('div');
+    d.className='led-dot';
+    d.style.left = x+'vw';
+    d.style.top = y+'vh';
+    d.style.animationDelay = (Math.random()*3)+'s';
+    document.body.appendChild(d);
+  });
+})();
+
+/* nav toggle */
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+navToggle.addEventListener('click', ()=>{
+  navLinks.classList.toggle('open');
+});
+navLinks.querySelectorAll('a').forEach(a=>{
+  a.addEventListener('click', ()=> navLinks.classList.remove('open'));
+});
+
+/* active nav link on scroll */
+const sections = document.querySelectorAll('section, header.hero');
+const linkMap = {};
+navLinks.querySelectorAll('a').forEach(a=>{ linkMap[a.getAttribute('href')] = a; });
+
+const navObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    const id = '#'+entry.target.id;
+    if(linkMap[id]){
+      if(entry.isIntersecting){
+        Object.values(linkMap).forEach(l=>l.classList.remove('active'));
+        linkMap[id].classList.add('active');
+      }
+    }
+  });
+},{rootMargin:'-45% 0px -45% 0px'});
+sections.forEach(s=>{ if(s.id) navObserver.observe(s); });
+
+/* scroll reveal */
+const revealObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add('visible');
+      revealObserver.unobserve(entry.target);
+    }
+  });
+},{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=> revealObserver.observe(el));
+
+/* typed role line */
+const roleLine = document.getElementById('roleLine');
+const roleText = '// EMBEDDED_SYSTEMS_ENGINEER';
+const cursor = roleLine.querySelector('.cursor');
+if(reduceMotion){
+  roleLine.textContent = roleText;
+  roleLine.appendChild(cursor);
+} else {
+  let i = 0;
+  function typeChar(){
+    if(i <= roleText.length){
+      roleLine.textContent = roleText.slice(0,i);
+      roleLine.appendChild(cursor);
+      i++;
+      setTimeout(typeChar, 45);
+    }
+  }
+  typeChar();
+}
+
+/* counter */
+const counterEl = document.getElementById('counterAmount');
+const counterObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      animateCounter();
+      counterObserver.unobserve(entry.target);
+    }
+  });
+},{threshold:.4});
+counterObserver.observe(document.querySelector('.counter-box'));
+
+function animateCounter(){
+  const target = 50000;
+  const duration = reduceMotion ? 0 : 1200;
+  const start = performance.now();
+  function step(now){
+    const progress = duration === 0 ? 1 : Math.min((now-start)/duration, 1);
+    const value = Math.floor(progress * target);
+    counterEl.textContent = '₹' + value.toLocaleString('en-IN');
+    if(progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+/* copy to clipboard */
+const toast = document.getElementById('toast');
+let toastTimer;
+document.querySelectorAll('.contact-pin').forEach(pin=>{
+  pin.addEventListener('click', async ()=>{
+    const value = pin.getAttribute('data-copy');
+    try{
+      await navigator.clipboard.writeText(value);
+      showToast('Copied: ' + value);
+    }catch(e){
+      showToast('Copy failed — select manually');
+    }
+  });
+});
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toast.classList.remove('show'), 2200);
+}
+
+/* scroll progress + back to top */
+const progressBar = document.getElementById('scrollProgress');
+const backToTop = document.getElementById('backToTop');
+function onScroll(){
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = docHeight > 0 ? (scrollTop/docHeight)*100 : 0;
+  progressBar.style.width = pct + '%';
+  if(scrollTop > 420) backToTop.classList.add('show');
+  else backToTop.classList.remove('show');
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+onScroll();
+
+backToTop.addEventListener('click', ()=>{
+  window.scrollTo({top:0, behavior: reduceMotion ? 'auto' : 'smooth'});
+});
+</script>
+
+</body>
+</html>
